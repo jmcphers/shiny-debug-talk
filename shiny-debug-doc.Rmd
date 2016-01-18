@@ -1,0 +1,130 @@
+---
+title: "Debugging Shiny Applications"
+author: "Jonathan McPherson"
+date: "January 4, 2016"
+output: html_document
+---
+
+# Introduction
+
+Debugging Shiny applications can be a difficult task for a variety of reasons. Among them:
+
+1. R's debugger lacks some features provided by other modern debuggers.
+2. It can be more difficult to visualize the order of execution in a reactive system.  
+3. There's a lot of Shiny overhead on the stack when execution halts in a Shiny app.
+
+The goal of this article is to arm you with techniques for debugging in Shiny specifically. If you're interested in debugging R more generally, we recommend reading [Debugging with RStudio](https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio) instead.
+
+# Debugging
+
+## Breakpoints
+
+If you know, or suspect you know, where in the code the problem lies, the most straightforward debugging technique is setting a breakpoint. In RStudio, you can do this just by clicking to the left of the line number. 
+
+![Breakpoint](images/breakpoint.png)
+
+When you run your Shiny app, R will stop execution at the breakpoint, and you can begin stepping through your code.
+
+![Breakpoint](images/breakpoint-hit.png)
+
+While stepping, you can examine the contents of the environment and the callstack to see how execution reached your code, and what values it's working with.
+
+### Breakpoint Limitations
+
+Unfortunately, breakpoints aren't helpful in all situations. For technical reasons[^1], breakpoints can *only* be used inside the `shinyServer` function. You can't use them in code in other .R files. 
+
+Breakpoints can tell you something about why code is executing, but they can't always tell you why something *isn't* executing. 
+
+## browser() statements
+
+The `browser()` statement is another useful debugging tool. It acts like a breakpoint--when evaluated, it halts execution and enters the debugger. You can add it anywhere an R expression is valid. 
+
+![browser()](images/browser.png)
+
+Unlike breakpoints, `browser()` works everywhere, so it's suitable for use in any code invoked by your Shiny app. You can also invoke `browser()` conditionally to create conditional breakpoints; for instance:
+
+    if (x > 1024)
+      browser()
+
+The downside of `browser()` is that you need to re-run your Shiny application to apply it, and you need to remember to take it out afterwards. 
+
+# Tracing 
+
+In many cases it's difficult to diagnose a problem by halting execution, and instead you need to observe the system as it runs. This is particularly true of Shiny applications since the system doesn't run once through linearly as an R script does! We'll look at a number of ways to peek into the system while it's running.
+
+## Showcase Mode
+
+If you've ever visited the [Shiny Gallery](http://shiny.rstudio.com/gallery/), you've probably seen Showcase Mode. In Showcase Mode, your code is shown alongside your application, and your application's server code flashes yellow when it executes. Here, for example, you can see the plot output chunk re-executing when the inputs change.
+
+![Showcase Mode](images/kmeans-showcase.gif)
+
+Showcase Mode is not enabled by default for privacy reasons (most people don't want it to be easy for others to see their app's code), but it's easy to turn on. Just invoke runApp directly with `display.mode="showcase"`:
+
+    > shiny::runApp(display.mode="showcase")
+
+If you want showcase mode to be on by default (for an extended debugging session, or if you want to use showcase mode in conjunction with the IDE Run App button), add a file named `DESCRIPTION` to your app's folder, with these contents:
+
+    Title: My App
+    Author: Alice Smith
+    DisplayMode: Showcase
+    Type: Shiny
+    
+## The Reactive Log
+
+Another way to trace the execution of reactives at runtime is to use the Shiny reactive log. In addition to telling you which reactives are executing, the reactive log will help you visualize the dependencies between reactive objects.
+
+Start a new R session and run the command:
+
+    > options(shiny.reactlog=TRUE); 
+  
+Then, launch your Shiny app. In the Shiny app, press *Ctrl+F3* to launch the reactive log visualization.
+
+For more information, type `?shiny::showReactLog` at the R console, or read the [`showReactLog` online documentation](http://shiny.rstudio.com/reference/shiny/latest/showReactLog.html).
+
+## "printf" tracing
+
+In some situations the best tracing technique is the oldest: a statement that emits text to the console when it's reached. These are more work to use, but offer the unique advantage of allowing you to emit the values of variables without interrupting execution. 
+
+You can do this by using the `cat` command in your Shiny application. For instance, from the sample Shiny application:
+
+    # generate bins based on input$bins from ui.R
+    x    <- faithful[, 2] 
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    cat("drawing histogram with", input$bins, "bins\n")
+    
+After adding your `cat` statement, run your Shiny application and watch the R console. You'll see a line emitted each time the code runs. 
+
+    Listening on http://127.0.0.1:5757
+    drawing histogram with 30 bins
+    drawing histogram with 35 bins
+
+### Tracing in Deployed Applications
+
+`cat()` is also one of the few tracing techniques which works well even on a remote system. If your application is deployed on RStudio's [ShinyApps.io service](https://www.shinyapps.io/), then you can see the output the `cat()` traces in your deployed app, in real time. Here's how:
+
+1. Add `cat()` tracing statements to your application.
+2. Deploy your application, using the RStudio IDE or the `rsconnect::deployApp()` function. 
+3. From the application's directory, run `rsconnect::showLogs(streaming = TRUE)`
+4. Navigate to the application (on ShinyApps.io) in your browser, and watch the R console for output.
+
+You'll see something like the  following:
+
+    2016-01-29T01:26:12.291216+00:00 shinyapps[77594]: 
+    2016-01-29T01:26:12.291218+00:00 shinyapps[77594]: Starting R with process ID: '26'
+    2016-01-29T01:26:14.162374+00:00 shinyapps[77594]: drawing histogram with 30 bins
+    2016-01-29T01:26:14.495249+00:00 shinyapps[77594]: drawing histogram with 35 bins
+
+If your application gets a lot of usage, you may wish to guard the `cat()` output so that only your own sessions emit it, as it will be otherwise difficult to distinguish output from your own sessions with output from other sessions. 
+
+TODO: describe how to emit session ID?
+
+### Caveats
+
+One thing to keep in mind while using `cat()` to trace values at runtime is that Shiny doesn't give it special treatment--if your `cat()` expression references reactive values, a dependency will be created. This may cause your application to behave differently with the `cat()` statement than without it, which is obviously undesirable.
+
+Make certain that any reactives referenced by the `cat()` statement are already referenced elsewhere in the observer or reactive in which it resides. 
+# Errors
+
+
+
+[^1]: Breakpoints work by modifying a function body at runtime to include a `browser()` statement. The functions in Shiny applications are ephemeral--they are created on demand when the app starts, and exist only why it's running. 

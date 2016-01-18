@@ -1,0 +1,32 @@
+---
+title: "Untitled"
+author: "Jonathan McPherson""
+title: Debugging with Shiny
+output: ioslides_presentation
+---
+
+# Overview
+
+We'll cover four main areas:
+- Tracing Execution
+- Tracing Errors
+- Debugging
+
+# Showcase mode
+
+# The Reactive Graph
+
+# JavaScript error console
+
+# Shiny traces
+
+# Deployed Apps
+
+options()
+
+```{r}
+# Check JavaScript error console (btw it would be great to have a decent experience for doing this in RStudio someday)
+# options(shiny.trace = TRUE) to see what messages are going back and forth between the browser and server. This is mostly useful when you're writing your own custom bindings, or if you're not sure why something's not updating.
+# options(shiny.error) and options(shiny.observer.error). Honestly I'm not sure if these are working correctly. That was something I was hoping one of us (you, Winston, or I) could look into.
+# Collecting tracebacks when errors occur in observers/reactives. Again, not exactly sure what the answer is here, also needs investigation by one of us.
+```
