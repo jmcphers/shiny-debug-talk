@@ -2,18 +2,31 @@
 title: "Debugging Shiny Applications"
 author: "Jonathan McPherson"
 date: "January 18, 2016"
-output: html_document
+output: 
+  html_document: 
+    highlight: textmate
+    theme: flatly
 ---
 
 # Introduction
 
-Debugging Shiny applications can be a difficult task for a variety of reasons. Among them:
-
-1. R's debugger lacks some features provided by other modern debuggers.
-2. It can be more difficult to visualize the order of execution in a reactive system.  
-3. There's a lot of Shiny overhead on the stack when execution halts in a Shiny app.
+Debugging Shiny applications can be challenging. Because Shiny is reactive, code execution isn't as linear as you might be used to. Your application code runs behind a web server and the Shiny framework itself, which can make it harder to access. 
 
 The goal of this article is to arm you with techniques for debugging in Shiny specifically. If you're interested in debugging R more generally, we recommend reading [Debugging with RStudio](https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio) instead.
+
+We'll cover three main approaches:
+
+1. **Debugging**
+
+    Pausing execution of your program, at a place you choose, to inspect its state. Best used when you suspect where a problem lies or need to verify the state around a particular section of code.
+
+2. **Tracing**
+  
+    Collecting information as your program runs, without pausing it, for later analysis. Best used when you're diagnosing systemic issues (for instance, reactivity) or when frequent interruption is inappropriate.
+
+2. **Error handling**
+
+    Finding the source of errors (both on the client and server side) and ascertaining their cause. 
 
 # Debugging
 
@@ -75,7 +88,7 @@ Another way to trace the execution of reactives at runtime is to use the Shiny r
 
 Start a new R session and run the command:
 
-    > options(shiny.reactlog=TRUE); 
+    > options(shiny.reactlog=TRUE) 
   
 Then, launch your Shiny app. In the Shiny app, press *Ctrl+F3* to launch the reactive log visualization. It'll look something like this:
 
@@ -118,8 +131,6 @@ You'll see something like the  following:
 
 If your application gets a lot of usage, you may wish to guard the `cat()` output so that only your own sessions emit it, as it will be otherwise difficult to distinguish output from your own sessions with output from other sessions. 
 
-TODO: describe how to emit session ID?
-
 ### cat() Caveats
 
 One thing to keep in mind while using `cat()` to trace values at runtime is that Shiny doesn't give it special treatment--if your `cat()` expression references reactive values, a dependency will be created. This may cause your application to behave differently with the `cat()` statement than without it, which is obviously undesirable.
@@ -153,7 +164,133 @@ Whether you're throwing your own errors or handling errors thrown elsewhere (for
 
 ## R errors
 
+Most of the errors you'll be dealing with will be raised by R; here we'll describe strategies for dealing with these errors.
+
+### R error tracebacks
+
+In earlier versions of Shiny, it could be difficult to locate errors; they the error itself would be printed at the console, but it was always necessary to do some work to see where the error originated.
+
+Thankfully the latest version of Shiny (0.13.0 at time of writing) includes a feature which automatically dumps not only the error but a stack trace indicating where the error occurred to the console. 
+
+Try, for example, introducing an error into the sample Shiny app.
+
+```{r eval=FALSE}
+bins <- seq(min(x), max(x), length.out = input$bins + 1)
+if (input$bins > 40)
+  stop("too many bins")
+```
+
+Now, run the app and drag the slider to the right to enter the error condition. The console will show you a stack trace:
+
+    Warning: Error in renderPlot: too many bins
+    Stack trace (innermost first):
+        76: renderPlot [server.R#20]
+        68: output$distPlot
+         1: shiny::runApp
+         
+What are those numbers before the function names (`76`, `68`, and `1`)? They're the indices into the call stack, which in this case contains nearly 80 calls. Most of those calls, though, are Shiny internals, which are hidden to make the stack trace easier to read. In the vast majority if cases these internals won't be relevant to your error.
+
+If you need to see the entire call stack, you can set:
+
+    > options(shiny.fullstacktrace=TRUE)
+    
+As you might imagine, this prints a very verbose stack strace!
+
+    Warning: Error in renderPlot: too many bins
+    Stack trace (innermost first):
+        79: h
+        78: .handleSimpleError
+        77: stop
+        76: renderPlot [server.R#20]
+        75: ..stacktraceon..
+        74: func
+        73: withVisible
+        72: func
+        71: <Anonymous>
+        70: do.call
+        69: ..stacktraceoff..
+        68: output$distPlot
+        67: ..stacktraceon..
+        66: orig
+        65: func
+        64: withCallingHandlers
+        63: captureStackTraces
+        62: withCallingHandlers
+        61: shinyCallingHandlers
+        60: doTryCatch
+        59: tryCatchOne
+        58: tryCatchList
+        57: doTryCatch
+        56: tryCatchOne
+        55: tryCatchList
+        54: tryCatch
+        53: observerFunc
+        52: doTryCatch
+        51: tryCatchOne
+        50: tryCatchList
+        49: tryCatch
+        48: contextFunc
+        47: env$runWith
+        46: withReactiveDomain
+        45: ctx$run
+        44: run
+        43: withCallingHandlers
+        42: captureStackTraces
+        41: withCallingHandlers
+        40: shinyCallingHandlers
+        39: doTryCatch
+        38: tryCatchOne
+        37: tryCatchList
+        36: tryCatch
+        35: flushCallback
+        34: FUN
+        33: lapply
+        32: ctx$executeFlushCallbacks
+        31: .getReactiveEnvironment()$flush
+        30: flushReact
+        29: withReactiveDomain
+        28: messageHandler
+        27: withCallingHandlers
+        26: captureStackTraces
+        25: withCallingHandlers
+        24: withLogErrors
+        23: handler
+        22: doTryCatch
+        21: tryCatchOne
+        20: tryCatchList
+        19: tryCatch
+        18: try
+        17: <Anonymous>
+        16: eval
+        15: evalq
+        14: doTryCatch
+        13: tryCatchOne
+        12: tryCatchList
+        11: doTryCatch
+        10: tryCatchOne
+         9: tryCatchList
+         8: tryCatch
+         7: run
+         6: service
+         5: serviceApp
+         4: withCallingHandlers
+         3: captureStackTraces
+         2: ..stacktraceoff..
+         1: runApp
+     
+The `..stacktraceon..` and `..stacktraceoff..` calls indicate where Shiny would ordinarily have collapsed the stack.
+
+### Pausing on errors
+
+Sometimes, knowing *where* an error occurred gives you enough information to fix it. At other times, though, you'll need additional context: what were the arguments to functions in the callstack? what were the values of local variables at the time the error occured?
+
+You can cause Shiny to enter the debugger when an error occurs by using the following statement:
+
+    > options(shiny.error = browser)
+
 ## JavaScript errors
+
+Occasionally, a runtime problem will be caused by an error occurring in JavaScript. This is most common when working with custom bindings and third-party JavaScript components.
 
 Most web browsers contain a JavaScript console that can be used to view logs and unhandled exceptions. We'll focus here on Chrome since it's widely used on all three major desktop platforms, but the other major browsers are structured very similarly. 
 
@@ -167,6 +304,8 @@ Or, right click on the Shiny app and choose Inspect.
 Once you have the developer tools open, click the Console tab. Here you'll see any unhandled JavaScript exceptions; for instance, here's an error raised when trying to load a Shiny app that's no longer running:
 
 ![console error](images/console.png)
+
+Leaving the development tools open is also a good idea when looking for JavaScript issues; in most browsers, merely having the developer tools open is enough to cause the browser enter the debugger automatically when an unhandled exception occurs.
 
 ### First-chance exceptions
 
@@ -194,7 +333,12 @@ Restart RStudio, start your Shiny app, right-click on it, and you'll see a new *
  
 # Asking for Help
 
-TODO: describe what to send to shiny-discuss
+Some bugs won't yield to even the most determined attempts at analysis, and you'll need to enlist the help of a second set of eyes. Fortunately there are several active forums where you can ask questions. Two we recommend are ['shiny' at StackOverflow](http://stackoverflow.com/questions/tagged/shiny) and [the shiny-discuss Google group](https://groups.google.com/forum/#!forum/shiny-discuss).
 
+When asking for help, try to eliminate all the parts of your application that aren't related to the problem, so that anyone volunteering to help can understand the issue quickly. You'll often find that the process of isolating the problem and formulating a description leads you to the answer before you can post the question!
+
+The article [How to get help](http://shiny.rstudio.com/articles/help.html) on the Shiny Developer Center describes in detail what you'll want to include when asking for help.
+
+TODO: include [clientdata](http://shiny.rstudio.com/articles/client-data.html)?
 
 [^1]: Breakpoints work by modifying a function body at runtime to include a `browser()` statement. The functions in Shiny applications are ephemeral--they are created on demand when the app starts, and exist only why it's running. 
