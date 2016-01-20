@@ -4,7 +4,7 @@ title: Debugging with Shiny
 output: 
   ioslides_presentation:
     css: shiny-slides.css
-    highlight: textmate
+    logo: images/shiny-logo.png
     self_contained: no
 ---
 
