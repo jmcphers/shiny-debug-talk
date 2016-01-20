@@ -1,0 +1,8 @@
+slides > slide.dark {
+  background-image: url(images/texturebg.png);
+}
+
+slide img {
+  max-width: 768px;
+  max-height: 350px;
+}

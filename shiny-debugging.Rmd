@@ -1,32 +1,96 @@
 ---
-title: "Untitled"
-author: "Jonathan McPherson""
+author: "Jonathan McPherson"
 title: Debugging with Shiny
-output: ioslides_presentation
+output: 
+  ioslides_presentation:
+    css: shiny-slides.css
+    highlight: textmate
+    self_contained: no
 ---
 
 # Overview
 
-We'll cover four main areas:
-- Tracing Execution
-- Tracing Errors
+## Outline
+
+We'll cover three main areas:
+
 - Debugging
+- Tracing 
+- Errors
 
-# Showcase mode
+# Debugging
 
-# The Reactive Graph
+"Finding your bug is a process of confirming the many things that you believe are true — until you find one which is not true."
 
-# JavaScript error console
+-- Norm Matloff 
 
-# Shiny traces
+Author of *The Art of R Programming* and *The Art of Debugging*
 
-# Deployed Apps
+## Breakpoints
 
-options()
+![breakpoints](images/breakpoint.png)
 
-```{r}
-# Check JavaScript error console (btw it would be great to have a decent experience for doing this in RStudio someday)
-# options(shiny.trace = TRUE) to see what messages are going back and forth between the browser and server. This is mostly useful when you're writing your own custom bindings, or if you're not sure why something's not updating.
-# options(shiny.error) and options(shiny.observer.error). Honestly I'm not sure if these are working correctly. That was something I was hoping one of us (you, Winston, or I) could look into.
-# Collecting tracebacks when errors occur in observers/reactives. Again, not exactly sure what the answer is here, also needs investigation by one of us.
+*Breakpoint (armed)*
+
+## Breakpoints
+
+![breakpoints](images/breakpoint-hit.png)
+
+*Stepping after execution*
+
+## Breakpoints {.build}
+
+### Pros
+
+- Doesn't change code
+- Can inspect local values/stack
+- Can step through following code
+
+### Cons
+
+- Only works inside `shinyServer`
+- Can't tell you why something isn't happening
+- Interrupts program flow; not conditional
+
+## browser()
+
+![browser](images/browser.png)
+
+## browser() {.build}
+
+### Pros
+
+- Similar advantages to breakpoints
+- Valid anywhere an R expression is valid
+- Can be made conditional
+
+### Cons
+ 
+- Changes your code!
+- Interrupts program flow
+- Can't tell you why something isn't happening
+
+# Tracing
+
+## Showcase Mode
+
+![showcase mode](images/kmeans-showcase.gif)
+
+```{r eval=FALSE}
+runApp(..., display.mode="showcase")
 ```
+
+## Reactive Log
+
+![reactive log](images/reactlog.png)
+
+```{r eval=FALSE}
+options(shiny.reactlog=TRUE)
+runApp(...)
+showReactLog()
+```
+
+# Error Handling
+
+
+

@@ -5,7 +5,7 @@ date: "January 18, 2016"
 output: 
   html_document: 
     highlight: textmate
-    theme: flatly
+    theme: journal
 ---
 
 # Introduction
@@ -18,7 +18,7 @@ We'll cover three main approaches:
 
 1. **Debugging**
 
-    Pausing execution of your program, at a place you choose, to inspect its state. Best used when you suspect where a problem lies or need to verify the state around a particular section of code.
+    Pausing execution of your program, at a place you choose, to inspect its state as each following statement is executed. Best used when you suspect where a problem lies or need to verify the state around a particular section of code.
 
 2. **Tracing**
   
