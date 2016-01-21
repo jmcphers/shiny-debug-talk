@@ -119,4 +119,17 @@ aside.gdbar {
 slides > slide:not(.nobackground):before {
   background-size: 50px 50px;
   padding-left: 50px;
+  height: 50px;
+  bottom: 5px;
+}
+
+slides > slide > hgroup + article p {
+  font-family: Source Sans Pro;
+  font-weight: 300;
+  color: #ffffff;
+}
+
+.title-slide hgroup p {
+  font-family: Source Sans Pro;
+  font-weight: 300;
 }

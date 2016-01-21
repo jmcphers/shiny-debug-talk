@@ -1,18 +1,16 @@
 ---
 title: "Debugging Shiny Applications"
-author: "Jonathan McPherson"
-date: "January 18, 2016"
 output: 
   html_document: 
     highlight: textmate
-    theme: journal
+    theme: cosmo
 ---
 
 # Introduction
 
 Debugging Shiny applications can be challenging. Because Shiny is reactive, code execution isn't as linear as you might be used to. Your application code runs behind a web server and the Shiny framework itself, which can make it harder to access. 
 
-The goal of this article is to arm you with techniques for debugging in Shiny specifically. If you're interested in debugging R more generally, we recommend reading [Debugging with RStudio](https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio) instead.
+The goal of this article is to arm you with tools and techniques for debugging in Shiny specifically. If you're interested in tools for debugging R more generally, we recommend reading [Debugging with RStudio](https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio) instead. The [Debugging and Exceptions](http://adv-r.had.co.nz/Exceptions-Debugging.html) chapter in Hadley Wickham's excellent book [Advanced R](http://adv-r.had.co.nz/) is also extremely helpful if you're new to debugging in R. 
 
 We'll cover three main approaches:
 
@@ -32,7 +30,7 @@ We'll cover three main approaches:
 
 ## Breakpoints
 
-If you know, or suspect you know, where in the code the problem lies, the most straightforward debugging technique is setting a breakpoint. In RStudio, you can do this just by clicking to the left of the line number. 
+If you know, or suspect you know, where in the code the problem lies, the most straightforward debugging technique is setting a breakpoint. In RStudio, you can do this just by clicking to the left of the line number.
 
 ![Breakpoint](images/breakpoint.png)
 
@@ -42,11 +40,11 @@ When you run your Shiny app, R will stop execution at the breakpoint, and you ca
 
 While stepping, you can examine the contents of the environment and the callstack to see how execution reached your code, and what values it's working with.
 
+Currently, setting breakpoints inside Shiny applications is only possible in the RStudio IDE because no other R front end implements the Shiny debugging interface; the traditional R breakpoint utilities such as [`setBreakpoint`](https://stat.ethz.ch/R-manual/R-devel/library/utils/html/findLineNum.html) don't work with Shiny.
+
 ### Breakpoint Limitations
 
-Unfortunately, breakpoints aren't helpful in all situations. For technical reasons[^1], breakpoints can *only* be used inside the `shinyServer` function. You can't use them in code in other .R files. 
-
-Breakpoints can tell you something about why code is executing, but they can't always tell you why something *isn't* executing. 
+Unfortunately, breakpoints aren't helpful in all situations. For technical reasons[^1], breakpoints can *only* be used inside the `shinyServer` function. You can't use them in code in other .R files. And breakpoints can tell you something about why code is executing, but they can't always tell you why something *isn't* executing. 
 
 ## browser() statements
 
@@ -56,7 +54,7 @@ The `browser()` statement is another useful debugging tool. It acts like a break
 
 Unlike breakpoints, `browser()` works everywhere, so it's suitable for use in any code invoked by your Shiny app. You can also invoke `browser()` conditionally to create conditional breakpoints; for instance:
 
-    if (x > 1024)
+    if (input$bins > 50)
       browser()
 
 The downside of `browser()` is that you need to re-run your Shiny application to apply it, and you need to remember to take it out afterwards. 
@@ -102,10 +100,12 @@ In some situations the best tracing technique is the oldest: a statement that em
 
 You can do this by using the `cat` command in your Shiny application. For instance, from the sample Shiny application:
 
-    # generate bins based on input$bins from ui.R
-    x    <- faithful[, 2] 
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    cat("drawing histogram with", input$bins, "bins\n")
+```{r eval = FALSE}
+# generate bins based on input$bins from ui.R
+x    <- faithful[, 2] 
+bins <- seq(min(x), max(x), length.out = input$bins + 1)
+cat("drawing histogram with", input$bins, "bins\n")
+```
     
 After adding your `cat` statement, run your Shiny application and watch the R console. You'll see a line emitted each time the code runs. 
 
@@ -156,6 +156,10 @@ The log is from the perspective of the client, so:
 
 `RECV` indicates data sent from the R session to the browser.
 
+## What about trace()?
+
+If you're a seasoned R programmer, you may have used the [`trace()`](https://stat.ethz.ch/R-manual/R-devel/library/base/html/trace.html) function to add tracing without modifying your script. Unfortunately, it's not possible to use this utility (or any that depend on it, such as `setBreakpoint`) with Shiny. `trace()` works by rewriting the body of the function to be traced, so the function must already exist when you run it. Shiny generates functions at runtime that aren't easily addressable.
+
 # Errors
 
 Some code defects will result in a runtime error. While no one likes to see errors, they can be an invaluable tool for helping you verify code preconditions at runtime. Often, throwing an error immediately when the system's state becomes invalid (known as the [fail-fast property](https://en.wikipedia.org/wiki/Fail-fast)) will save you debugging time, as an observed problem may be miles downstream from its source. 
@@ -188,9 +192,9 @@ Now, run the app and drag the slider to the right to enter the error condition. 
         68: output$distPlot
          1: shiny::runApp
          
-What are those numbers before the function names (`76`, `68`, and `1`)? They're the indices into the call stack, which in this case contains nearly 80 calls. Most of those calls, though, are Shiny internals, which are hidden to make the stack trace easier to read. In the vast majority if cases these internals won't be relevant to your error.
+What are those numbers before the function names (`76`, `68`, and `1`)? They're the indices into the call stack, which in this case contains nearly 80 calls. Most of those calls, though, are Shiny internals, which are hidden to make the stack trace easier to read. In the vast majority of cases, these internals won't be relevant to your error.
 
-If you need to see the entire call stack, you can set:
+If you do need to see the entire call stack, you can set:
 
     > options(shiny.fullstacktrace=TRUE)
     
@@ -282,11 +286,27 @@ The `..stacktraceon..` and `..stacktraceoff..` calls indicate where Shiny would 
 
 ### Pausing on errors
 
-Sometimes, knowing *where* an error occurred gives you enough information to fix it. At other times, though, you'll need additional context: what were the arguments to functions in the callstack? what were the values of local variables at the time the error occured?
+Sometimes, knowing *where* an error occurred gives you enough information to fix it. At other times, though, you'll need additional context: What were the arguments to functions in the callstack? What were the values of local variables at the time the error occured? And so on.
 
 You can cause Shiny to enter the debugger when an error occurs by using the following statement:
 
     > options(shiny.error = browser)
+    
+When an error occurs, Shiny will run the function you name (here it's our old frind `browser()`) and wait for it to return before handling the error. This gives you an opportunity to inspect the state of the system at the exact moment the error arose.
+
+![Shiny error](images/shiny-error.png)
+
+Now you can see, for example, the value of `bins` and `x` at the time the error occurred. There are some subtleties associated with error debugging, however:
+
+#### Selecting a stack frame
+
+Sometimes, the debugger won't put you in the frame you expect. If this happens, use the Traceback pane in RStudio and click on the frame you're interested in to see the code and values in that frame.
+
+Note, however, that clicking on a frame won't actually change the environment in which expressions entered at the R console are evaluated. If you want to actually browse the environment of a stack frame interactively, use `recover()` to select a frame. 
+
+#### Continuing after an error
+
+The `shiny.error` function is invoked when an error occurs, but once the error has occurred, it's too late to suppress it! You're debugging, but there's no next expression to step to; after you're finished inspecting the error, continue in the debugger (type `c` or press Continue in RStudio) to let Shiny handle the error as it normally would.
 
 ## JavaScript errors
 
