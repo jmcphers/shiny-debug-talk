@@ -215,7 +215,9 @@ What are those numbers before the function names (`76`, `68`, and `1`)? They're 
 
 If you do need to see the entire call stack, you can set:
 
-    > options(shiny.fullstacktrace=TRUE)
+```{r eval = FALSE}
+options(shiny.fullstacktrace = TRUE)
+```
     
 As you might imagine, this prints a very verbose stack strace!
 
@@ -309,7 +311,9 @@ Sometimes, knowing *where* an error occurred gives you enough information to fix
 
 You can cause Shiny to enter the debugger when an error occurs by using the following statement:
 
-    > options(shiny.error = browser)
+```{r eval = FALSE}
+options(shiny.error = browser)
+```
     
 When an error occurs, Shiny will run the function you name (here it's our old frind `browser()`) and wait for it to return before handling the error. This gives you an opportunity to inspect the state of the system at the exact moment the error arose.
 
