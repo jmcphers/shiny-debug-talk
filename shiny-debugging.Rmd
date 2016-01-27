@@ -11,7 +11,7 @@ output:
 
 # Overview
 
-## Goals {.build}
+## Goals 
 
 ### You will learn:
 
@@ -66,6 +66,13 @@ Author of *The Art of R Programming* and *The Art of Debugging*
 
 ![browser](images/browser.png)
 
+## Conditional breakpoint
+
+```{r eval=FALSE}
+if (input$bins > 50)
+  browser()
+```
+
 ## browser() {.build}
 
 ### Pros
@@ -81,6 +88,10 @@ Author of *The Art of R Programming* and *The Art of Debugging*
 - Can't tell you why something isn't happening
 
 # Tracing
+
+<div class="notes">
+In many cases it's difficult to diagnose a problem by halting execution, and instead you need to observe the system as it runs. This is particularly true of Shiny applications since the system doesn't run once through linearly as an R script does! We'll look at a number of ways to peek into the system while it's running.
+</div>
 
 ## Showcase Mode {.build}
 

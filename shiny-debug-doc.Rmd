@@ -57,8 +57,10 @@ The `browser()` statement is another useful debugging tool. It acts like a break
 
 Unlike breakpoints, `browser()` works everywhere, so it's suitable for use in any code invoked by your Shiny app. You can also invoke `browser()` conditionally to create conditional breakpoints; for instance:
 
-    if (input$bins > 50)
-      browser()
+```{r eval=FALSE}
+if (input$bins > 50)
+  browser()
+```
 
 The downside of `browser()` is that you need to re-run your Shiny application to apply it, and you need to remember to take it out afterwards. 
 
