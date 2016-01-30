@@ -9,16 +9,46 @@ output:
     incremental: true
 ---
 
-# Overview
+## About me
 
-## Goals 
+![stanford baby](images/stanford-baby.jpg)
+
+<div class="notes">
+Here's me about 35 years ago, at the Stanford Medical Center, just a few blocks away.
+</div>
+
+## About me
+
+- Software engineer since mid-90's
+- RStudio IDE developer since 2013
+- Worked on RStudio debugging features
+
+<div class="notes">
+Web developer, worked at Microsoft on Office.
+</div>
+
+## Goals
 
 ### You will learn:
 
+<div class="columns-2">
 - Tools for finding bugs & diagnosing errors in Shiny applications
-- Little-known ways to look under the covers 
+- Little-known ways to look under the hood 
 - How to debug problems in deployed apps
-- Cheat code for IDE JavaScript debug tools
+- Cheat code for OSX IDE JavaScript debug tools
+
+![toolbelt](images/toolbelt.jpg)
+</div>
+
+<div class="notes">
+This is a tools talk. If you're like me, when you debug an app you observe a problem and then you open up your bag of tools and pick one to use to attack the problem. Our goal here today is to fill your bag with lots of tools so you have the right one. We'll discuss how to use each tool and when you'd want to.
+
+We'll cover simple and advanced tools. Whether you're new 
+</div>
+
+## Non-goals
+
+![Advanced R](images/adv-r.jpg)
 
 ## Outline
 
@@ -42,19 +72,21 @@ Author of *The Art of R Programming* and *The Art of Debugging*
 
 *Breakpoint (armed)*
 
-## Breakpoints
+## Breakpoints {.build}
 
 ![breakpoints](images/breakpoint-hit.png)
 
+![neo](images/neo-bullets.jpg)
+
 *Stepping after execution*
 
-## Breakpoints {.build}
+## Breakpoints
 
 ### Pros
 
-- Doesn't change code
 - Can inspect local values/stack
 - Can step through following code
+- Doesn't change code
 
 ### Cons
 
@@ -73,7 +105,7 @@ if (input$bins > 50)
   browser()
 ```
 
-## browser() {.build}
+## browser() 
 
 ### Pros
 
@@ -89,10 +121,6 @@ if (input$bins > 50)
 
 # Tracing
 
-<div class="notes">
-In many cases it's difficult to diagnose a problem by halting execution, and instead you need to observe the system as it runs. This is particularly true of Shiny applications since the system doesn't run once through linearly as an R script does! We'll look at a number of ways to peek into the system while it's running.
-</div>
-
 ## Showcase Mode {.build}
 
 ```{r eval=FALSE}
@@ -101,7 +129,7 @@ runApp(..., display.mode="showcase")
 
 ![showcase mode](images/kmeans-showcase.gif)
 
-## Showcase Mode {.build}
+## Showcase Mode 
 
 ### Pros
 
@@ -123,7 +151,7 @@ showReactLog()
 
 ![reactive log](images/reactlog.png)
 
-## Reactive Log {.build}
+## Reactive Log 
 
 ### Pros
 
@@ -148,7 +176,11 @@ cat(file=stderr(), "drawing histogram with", input$bins, "bins\n")
     drawing histogram with 30 bins
     drawing histogram with 35 bins
     
-## "printf" tracing {.build}
+<div class="notes">
+`file=stderr()` because some parts of Shiny use `capture.output`
+</div>
+
+## "printf" tracing 
 
 ### Pros
 
@@ -158,8 +190,12 @@ cat(file=stderr(), "drawing histogram with", input$bins, "bins\n")
 ### Cons
 
 - Limited to textual representation of values
-- Modifies code 
+- Have to guess values to log
 - Watch out for reactive side effects!
+
+## "printf" tracing
+
+![heisenbug](images/heisenbug.jpg)
 
 ## Tracing on Shinyapps.io {.build}
 
@@ -250,6 +286,12 @@ Right-click, inspect element, Console.
     defaults write org.rstudio.RStudio WebKitDeveloperExtras -bool true
     
 ![inspect element](images/inspectelement.png)
+
+## Links 
+
+http://shiny.rstudio.com/articles/debugging.html
+
+http://www.github.com/jmcphers/shiny-debug-talk
 
 # Wrapup
 
